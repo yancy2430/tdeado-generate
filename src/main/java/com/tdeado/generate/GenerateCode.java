@@ -1,5 +1,6 @@
 package com.tdeado.generate;
 
+import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.exceptions.MybatisPlusException;
 import com.baomidou.mybatisplus.generator.AutoGenerator;
 import com.baomidou.mybatisplus.generator.InjectionConfig;
@@ -57,6 +58,23 @@ public class GenerateCode extends AbstractMojo {
      * @parameter expression="${tablePrefix}"
      */
     private String tablePrefix;
+    /**
+     * @parameter expression="${author}"
+     */
+    private String author;
+    /**
+     * @parameter expression="${vuePath}"
+     */
+    private String vuePath;
+    /**
+     * @parameter expression="${superControllerClass}"
+     */
+    private String superControllerClass;
+    /**
+     * @parameter expression="${superEntityClass}"
+     */
+    private String superEntityClass;
+
 
 
     @Override
@@ -115,7 +133,7 @@ public class GenerateCode extends AbstractMojo {
         // 全局配置
         GlobalConfig gc = new GlobalConfig();
         gc.setOutputDir(basedir + "/src/main/java");
-        gc.setAuthor("yangzhe");
+        gc.setAuthor(author);
         gc.setOpen(false);
         gc.setFileOverride(false);
 //        gc.setEnableCache(true);
@@ -151,7 +169,7 @@ public class GenerateCode extends AbstractMojo {
         focList.add(new FileOutConfig("/templates/vue.ftl") {
             @Override
             public String outputFile(TableInfo tableInfo) {
-                return "/Users/yangzhe/WebstormProjects/admin-view/src/views/"+artifactId.toLowerCase()+"/"+tableInfo.getEntityPath().replace(cfg.getMap().get("moduleName").toString(), "")+".vue";
+                return vuePath+artifactId.toLowerCase()+"/"+tableInfo.getEntityPath().replace(cfg.getMap().get("moduleName").toString(), "")+".vue";
             }
         });
 
@@ -170,9 +188,14 @@ public class GenerateCode extends AbstractMojo {
         strategy.setTablePrefix(tablePrefix);
         strategy.setColumnNaming(NamingStrategy.underline_to_camel);
         strategy.setEntityLombokModel(true);
-        strategy.setSuperControllerClass("com.tdeado.core.controller.BaseController");
+        if (StrUtil.isNotBlank(superControllerClass)) {
+            strategy.setSuperControllerClass(superControllerClass);
+        }
         strategy.setInclude(name);
-//        strategy.setSuperEntityClass("com.tdeado.core.entity.Entity");
+        if (StrUtil.isNotBlank(superEntityClass)) {
+            strategy.setSuperEntityClass(superEntityClass);
+        }
+
         strategy.setControllerMappingHyphenStyle(false);
         mpg.setStrategy(strategy);
         mpg.setTemplateEngine(new FreemarkerTemplateEngine());
