@@ -74,6 +74,10 @@ public class GenerateCode extends AbstractMojo {
      * @parameter expression="${superEntityClass}"
      */
     private String superEntityClass;
+    /**
+     * @parameter expression="${responseResultClass}"
+     */
+    private String responseResultClass;
 
 
 
@@ -155,6 +159,12 @@ public class GenerateCode extends AbstractMojo {
                 // to do nothing
                 Map<String, Object> map = new HashMap<>();
                 map.put("moduleName", artifactId.replace("-",""));
+                map.put("responseResultClass",responseResultClass);
+                String[] r = responseResultClass.split("\\.");
+                if (r.length>0) {
+                    map.put("responseResult",r[r.length-1]);
+                }
+
                 this.setMap(map);
             }
         };

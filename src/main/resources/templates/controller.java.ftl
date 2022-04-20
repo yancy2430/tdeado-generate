@@ -2,8 +2,7 @@ package ${package.Controller};
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.tdeado.core.api.R;
-import com.tdeado.core.controller.BaseController;
+import ${cfg.responseResultClass};
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
@@ -48,8 +47,8 @@ public class ${table.controllerName} {
     * @return 返回结果
     */
     @RequestMapping("getById")
-    public R<${entity}> getById(@RequestParam("id") String id){
-        return success(${table.entityPath}Service.getById(id));
+    public ${cfg.responseResult}<${entity}> getById(@RequestParam("id") String id){
+        return ${cfg.responseResult}.ok(${table.entityPath}Service.getById(id));
     }
 
     /**
@@ -58,8 +57,8 @@ public class ${table.controllerName} {
      * @return 返回结果
      */
     @PostMapping("save")
-    public R<Boolean> save(@RequestBody ${entity} ${table.entityPath}){
-        return success(${table.entityPath}Service.saveOrUpdate(${table.entityPath}));
+    public ${cfg.responseResult}<Boolean> save(@RequestBody ${entity} ${table.entityPath}){
+        return ${cfg.responseResult}.ok(${table.entityPath}Service.saveOrUpdate(${table.entityPath}));
     }
     /**
      * 删除${table.comment!}
@@ -67,8 +66,8 @@ public class ${table.controllerName} {
      * @return 返回结果
      */
     @RequestMapping("removeById")
-    public R<Boolean> removeById(@RequestParam String id){
-        return success(${table.entityPath}Service.removeById(id));
+    public ${cfg.responseResult}<Boolean> removeById(@RequestParam String id){
+        return ${cfg.responseResult}.ok(${table.entityPath}Service.removeById(id));
     }
 
     /**
@@ -79,13 +78,13 @@ public class ${table.controllerName} {
      * @return 返回结果
      */
     @RequestMapping("page")
-    public R<IPage<${entity}>> page(
+    public ${cfg.responseResult}<IPage<${entity}>> page(
             @RequestParam("page") Integer page,
             @RequestParam("size") Integer size,
             ${entity} ${table.entityPath}
     ) {
         IPage<${entity}> pageData = ${table.entityPath}Service.page(new Page<>(page, size), new QueryWrapper<>(${table.entityPath}));
-        return success(pageData);
+        return ${cfg.responseResult}.ok(pageData);
     }
 
 }
