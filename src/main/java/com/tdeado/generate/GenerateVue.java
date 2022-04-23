@@ -1,6 +1,8 @@
 package com.tdeado.generate;
 
 import cn.hutool.core.io.resource.ClassPathResource;
+import cn.hutool.json.JSON;
+import cn.hutool.json.JSONUtil;
 import com.google.gson.Gson;
 import com.power.doc.builder.ApiDataBuilder;
 import com.power.doc.model.ApiAllData;
@@ -14,11 +16,13 @@ import org.apache.maven.plugin.MojoFailureException;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
 
+import static com.tdeado.generate.GenerateCode.scanner;
 import static com.tdeado.generate.InitDoc.createFile;
 import static com.tdeado.generate.InitDoc.readFileContent;
 
@@ -52,9 +56,12 @@ public class GenerateVue extends AbstractMojo {
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
         try {
+            String tables = scanner("输入表名 多个用,分割 ,所有输入 all");
+
             InputStream in = getClass().getClassLoader().getResourceAsStream("smart-doc.json");
             String jsonConfig = readFileContent(in);
             ApiConfig config = new Gson().fromJson(jsonConfig, ApiConfig.class);
+            config.setPackageFilters(groupId);
             ApiAllData apiAllData = ApiDataBuilder.getApiData(config);
             Configuration configuration = new Configuration(Configuration.getVersion());
             configuration.setClassForTemplateLoading(InitDoc.class, "/templates/");
@@ -65,6 +72,7 @@ public class GenerateVue extends AbstractMojo {
             //数据模型
             for (ApiDoc apiDoc : apiAllData.getApiDocList()) {
                 HashMap<String, Object> model = new HashMap<>();
+                System.err.println(JSONUtil.toJsonStr(apiDoc.getList().get(0)));
                 model.put("api", apiDoc);
                 createFile(template, model, vuePath + apiDoc.getName().replace("Controller", "") + ".vue");
             }
@@ -74,6 +82,9 @@ public class GenerateVue extends AbstractMojo {
             e.printStackTrace();
             throw new RuntimeException(e.getMessage());
         }
+    }
+    public void create(String s){
+
     }
 
 }

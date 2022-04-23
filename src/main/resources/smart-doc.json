@@ -6,7 +6,7 @@
   "isStrict": false,
   "coverOld": true,
   "sortByTitle": true,
-  "packageFilters": "com.tdeado.document.controller.*",
+  "packageFilters": "*",
   "style": "hopscotch",
   "inlineEnum": true,
   "requestExample": false,
