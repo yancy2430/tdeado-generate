@@ -63,9 +63,9 @@ public class GenerateCode extends AbstractMojo {
      */
     private String author;
     /**
-     * @parameter expression="${vuePath}"
+     * @parameter expression="${uiPath}"
      */
-    private String vuePath;
+    private String uiPath;
     /**
      * @parameter expression="${superControllerClass}"
      */
@@ -83,6 +83,7 @@ public class GenerateCode extends AbstractMojo {
 
     @Override
     public void execute() {
+        StrUtil.blankToDefault(author,"");
             String tables = scanner("输入表名 多个用,分割 ,所有输入 all");
             if (tables.equals("all")) {
                 try {
@@ -179,7 +180,7 @@ public class GenerateCode extends AbstractMojo {
         focList.add(new FileOutConfig("/templates/vue.ftl") {
             @Override
             public String outputFile(TableInfo tableInfo) {
-                return vuePath+artifactId.toLowerCase()+"/"+tableInfo.getEntityPath().replace(cfg.getMap().get("moduleName").toString(), "")+".vue";
+                return uiPath+"/src/views/"+artifactId.toLowerCase()+"/"+tableInfo.getEntityName().replace(cfg.getMap().get("moduleName").toString(), "")+".vue";
             }
         });
 
@@ -211,9 +212,6 @@ public class GenerateCode extends AbstractMojo {
         mpg.setTemplateEngine(new FreemarkerTemplateEngine());
         mpg.execute();
     }
-    public static void initVue(){
-
-    }
 
     /**
      * <p>
@@ -241,7 +239,7 @@ public class GenerateCode extends AbstractMojo {
         DataSourceConfig dsc = new DataSourceConfig();
         dsc.setUrl(jdbcUrl+"?serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=UTF-8&useSSL=false&useLocalSessionState=true&rewriteBatchedStatements=true&allowPublicKeyRetrieval=true&tinyInt1isBit=false");
         // dsc.setSchemaName("public");
-        dsc.setDriverName(driverName);
+        dsc.setDriverName(StrUtil.blankToDefault(driverName,"com.mysql.cj.jdbc.Driver"));
         dsc.setUsername(username);
         dsc.setPassword(password);
         return dsc;

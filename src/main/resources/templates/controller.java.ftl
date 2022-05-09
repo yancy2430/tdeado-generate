@@ -17,6 +17,8 @@ import org.springframework.stereotype.Controller;
 import ${superControllerClassPackage};
 </#if>
 
+import java.util.List;
+
 /**
  *
  * ${table.comment!}
@@ -81,9 +83,14 @@ public class ${table.controllerName} {
     public ${cfg.responseResult}<IPage<${entity}>> page(
             @RequestParam("page") Integer page,
             @RequestParam("size") Integer size,
+            @RequestParam(value = "sorter",required = false) List<String> sorter,
             ${entity} ${table.entityPath}
     ) {
-        IPage<${entity}> pageData = ${table.entityPath}Service.page(new Page<>(page, size), new QueryWrapper<>(${table.entityPath}));
+        QueryWrapper<${entity}> queryWrapper = new QueryWrapper<${entity}>(${table.entityPath});
+        if (null!=sorter && sorter.size()==2){
+            queryWrapper.orderBy(true,sorter.get(1).equals("asc"),sorter.get(0));
+        }
+        IPage<${entity}> pageData = ${table.entityPath}Service.page(new Page<${entity}>(page, size), queryWrapper);
         return ${cfg.responseResult}.ok(pageData);
     }
 

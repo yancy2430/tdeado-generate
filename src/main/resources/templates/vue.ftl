@@ -27,9 +27,9 @@
 </template>
 
 <script>
-    import TdTable from "../../components/TdTable/TdTable";
+    import TdTable from "@/components/TdTable/TdTable";
     export default {
-        name: "List",
+        name: "${table.entityName}",
         components: {TdTable},
         data() {
             return {
@@ -39,11 +39,7 @@
         },
         methods: {
             dataSource(params) {
-                return  this.$request({
-                    url: "/fresh/shopAppMenu/page",
-                    method:"POST",
-                    params: params
-                })
+                return
             },
             handleResizeColumn: (w, col) => {
                 col.width = w;

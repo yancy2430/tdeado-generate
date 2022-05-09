@@ -1,5 +1,7 @@
 package com.tdeado.generate;
 
+import cn.hutool.json.JSON;
+import cn.hutool.json.JSONUtil;
 import com.google.gson.Gson;
 import com.power.doc.builder.ApiDataBuilder;
 import com.power.doc.builder.HtmlApiDocBuilder;
@@ -14,6 +16,7 @@ import jcifs.smb.SmbFileOutputStream;
 import org.apache.commons.io.IOUtils;
 
 import java.io.*;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -24,39 +27,24 @@ import java.util.Map;
  * 接口文档+npm接口依赖生成
  */
 public class InitDoc {
-    /**
-     * 流程
-     */
-    public static void prod(String objPath,String jsPath) throws Exception {
-        String jsonConfig = readFileContent(objPath + "/src/main/resources/smart-doc.json");
-        ApiConfig config = new Gson().fromJson(jsonConfig, ApiConfig.class);
-        ApiAllData apiAllData = ApiDataBuilder.getApiData(config);
-        System.err.println("检测完成 无异常");
-        HtmlApiDocBuilder.buildApiDoc(config);
-        System.err.println("生成文档完成");
-        Configuration configuration = new Configuration(Configuration.getVersion());
-        configuration.setClassForTemplateLoading(InitDoc.class, "/templates/");
-        Template template = configuration.getTemplate("api.ftl");
-        for (ApiDoc apiDoc : apiAllData.getApiDocList()) {
-            HashMap<String, Object> model = new HashMap<>();
-            model.put("api", apiDoc);
-            createFile(template, model, jsPath + apiDoc.getName().replace("Controller", "") + ".js");
-        }
-        System.err.println("JS生成完成");
-    }
-
-    /**
-     * 检测注释
-     *
-     * @param objPath
-     * @throws IOException
-     */
-    public static void check(String objPath) throws IOException {
-        String jsonConfig = readFileContent(objPath + "/src/main/resources/smart-doc.json");
-        ApiConfig config = new Gson().fromJson(jsonConfig, ApiConfig.class);
-        ApiDataBuilder.getApiData(config);
-        System.err.println("检测完成 无异常");
-    }
+    static String json = "{\n" +
+            "  \"projectName\": \"项目名称\",\n" +
+            "  \"serverUrl\": \"http://127.0.0.1\",\n" +
+            "  \"outPath\": \"src/main/resources/doc\",\n" +
+            "  \"allInOne\": true,\n" +
+            "  \"isStrict\": false,\n" +
+            "  \"coverOld\": true,\n" +
+            "  \"sortByTitle\": true,\n" +
+            "  \"packageFilters\": \"\",\n" +
+            "  \"style\": \"hopscotch\",\n" +
+            "  \"inlineEnum\": true,\n" +
+            "  \"requestExample\": false,\n" +
+            "  \"responseExample\": false,\n" +
+            "  \"displayActualType\": true,\n" +
+            "  \"ignoreRequestParams\": [\n" +
+            "    \"org.springframework.ui.ModelMap\"\n" +
+            "  ]\n" +
+            "}";
 
     /**
      * 生成HTML文档
@@ -75,9 +63,9 @@ public class InitDoc {
     }
 
 
-    public static void generateApiJs(String objPath,String jsPath) throws Exception {
-        String jsonConfig = readFileContent(objPath + "/src/main/resources/smart-doc.json");
-        ApiConfig config = new Gson().fromJson(jsonConfig, ApiConfig.class);
+    public static void generateApiJs(String jsPath) throws Exception {
+        System.out.println("开始生成api JS文件");
+        ApiConfig config = new Gson().fromJson(json, ApiConfig.class);
         ApiAllData apiAllData = ApiDataBuilder.getApiData(config);
         Configuration configuration = new Configuration(Configuration.getVersion());
         configuration.setClassForTemplateLoading(InitDoc.class, "/templates/");
@@ -89,58 +77,14 @@ public class InitDoc {
         for (ApiDoc apiDoc : apiAllData.getApiDocList()) {
             HashMap<String, Object> model = new HashMap<>();
             model.put("api", apiDoc);
+            model.put("module", apiDoc.getName().replace("Controller", ""));
+            System.out.println("开始生成" + jsPath + apiDoc.getName().replace("Controller", "") + ".js");
             createFile(template, model, jsPath + apiDoc.getName().replace("Controller", "") + ".js");
         }
         Map<String, Object> map = new HashMap<>();
         map.put("version", LocalDateTime.now().format(DateTimeFormatter.ofPattern("yy.Md.HHmm")));
     }
 
-    public static void localJs(String objPath, String smbPath) throws IOException, TemplateException {
-        System.out.println("开始生成api JS文件");
-        String jsonConfig = readFileContent(objPath + "/src/main/resources/smart-doc.json");
-        ApiConfig config = new Gson().fromJson(jsonConfig, ApiConfig.class);
-        ApiAllData apiAllData = ApiDataBuilder.getApiData(config);
-        HtmlApiDocBuilder.buildApiDoc(config);
-        Configuration configuration = new Configuration(Configuration.getVersion());
-        configuration.setClassForTemplateLoading(InitDoc.class, "/templates/");
-//            configuration.setDefaultEncoding("UTF‐8");
-        //加载模板
-        Template template = configuration.getTemplate("api.ftl");
-        //数据模型
-        for (ApiDoc apiDoc : apiAllData.getApiDocList()) {
-            HashMap<String, Object> model = new HashMap<>();
-            model.put("api", apiDoc);
-            String content = processTemplateIntoString(template, model);
-
-            SmbFile remoteFile = new SmbFile(smbPath + apiDoc.getName().replace("Controller", "") + ".js");
-            if (!remoteFile.exists()) {
-                remoteFile.createNewFile();
-            }
-            System.out.println("开始生成" + remoteFile.getPath());
-            remoteFile.connect();
-            InputStream in = IOUtils.toInputStream(content, StandardCharsets.UTF_8);
-            OutputStream out = new BufferedOutputStream(new SmbFileOutputStream(remoteFile));
-            try {
-                byte[] buffer = new byte[4096];
-                int len = 0; //读取长度
-                while ((len = in.read(buffer, 0, buffer.length)) != -1) {
-                    out.write(buffer, 0, len);
-                }
-            } finally {
-                try {
-                    out.flush();//刷新缓冲的输出流
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-                try {
-                    in.close();
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-
-    }
 
     public static void createFile(Template template, Map<String, Object> map, String name) throws Exception {
         String content = processTemplateIntoString(template, map);

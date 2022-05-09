@@ -15,7 +15,7 @@ import {serviceUrl} from '@/utils/request'
  * @param options ajax其他参数
 </#if>
 */
-export function ${apiMethodDoc.getName()} (<#if (apiMethodDoc.queryParams?size>0)>queryParams,</#if><#if (apiMethodDoc.requestParams?size>0)>data,</#if>options) {
+export function ${module?uncap_first}${apiMethodDoc.getName()?cap_first} (<#if (apiMethodDoc.queryParams?size>0)>queryParams,</#if><#if (apiMethodDoc.requestParams?size>0)>data,</#if>options) {
     <#if (apiMethodDoc.contentType=="multipart/form-data")>
         const formData = new FormData()
         <#list apiMethodDoc.queryParams as param>
@@ -26,13 +26,13 @@ export function ${apiMethodDoc.getName()} (<#if (apiMethodDoc.queryParams?size>0
     url: serviceUrl+'${apiMethodDoc.path}',
     method: 'POST',
     <#if ((apiMethodDoc.contentType=="multipart/form-data"))>
-        data: formData,
+    data: formData,
     </#if>
     <#if (apiMethodDoc.requestParams?size>0) && (apiMethodDoc.contentType!="multipart/form-data")>
-        data: JSON.stringify(data),
+    data: JSON.stringify(data),
     </#if>
     <#if (apiMethodDoc.queryParams?size>0) && (apiMethodDoc.contentType!="multipart/form-data")>
-        params:queryParams,
+    params:queryParams,
     </#if>
     headers: {
     'Content-Type': '${apiMethodDoc.contentType}'
