@@ -88,7 +88,11 @@ public class ${entity} implements Serializable {
     <#if (logicDeleteFieldName!"") == field.name>
     @TableLogic
     </#if>
+    <#if field.type?contains("enum")>
+    private ${entity}${field.propertyName?cap_first} ${field.propertyName};
+        <#else >
     private ${field.propertyType} ${field.propertyName};
+    </#if>
 </#list>
 <#------------  END 字段循环遍历  ---------->
 
