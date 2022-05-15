@@ -3,6 +3,13 @@ package ${package.Entity};
 <#list table.importPackages as pkg>
 import ${pkg};
 </#list>
+
+<#list table.fields as field>
+<#if field.type?contains("enum")>
+import ${package.Controller?replace(".controller",".enums")}.${entity}${field.propertyName?cap_first};
+</#if>
+</#list>
+
 <#if swagger2>
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
