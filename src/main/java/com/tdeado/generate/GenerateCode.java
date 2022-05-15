@@ -134,7 +134,7 @@ public class GenerateCode extends AbstractMojo {
                     EnumField field = new EnumField();
                     field.setLabel(s[i-1]);
                     field.setValue(i);
-                    field.setName(Jsoup.connect("https://www.chtml.cn/w?word="+field.getLabel()).get().select(".list_box .list_table_info .code_name_line>a").get(0).attr("data-val").toUpperCase(Locale.ROOT));
+                    field.setName(Jsoup.connect("https://www.chtml.cn/w?word="+field.getLabel()).get().select(".list_box .list_table_info .code_name_line>a").get(2).attr("data-val").toUpperCase(Locale.ROOT));
                     value.add(field);
                 } catch (IOException e) {
                     throw new RuntimeException(e);
