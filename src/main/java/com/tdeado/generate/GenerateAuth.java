@@ -1,10 +1,18 @@
 package com.tdeado.generate;
 
 import cn.hutool.core.io.FileUtil;
+import cn.hutool.core.util.StrUtil;
+import cn.hutool.crypto.digest.MD5;
+import cn.hutool.db.Db;
+import cn.hutool.db.DbUtil;
+import cn.hutool.db.Entity;
 import cn.hutool.json.JSON;
 import cn.hutool.json.JSONUtil;
+import com.baomidou.mybatisplus.generator.config.DataSourceConfig;
+import com.mysql.cj.jdbc.MysqlDataSource;
 import com.tdeado.generate.entity.VueAuth;
 import com.tdeado.generate.entity.VueBean;
+import com.zaxxer.hikari.util.DriverDataSource;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
@@ -13,55 +21,91 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
+import javax.sql.DataSource;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 /**
  * 更新扫描权限
- * @goal js
+ * @goal auth
  */
 public class GenerateAuth extends AbstractMojo {
     /**
-     * @parameter expression="${basedir}"
+     * @parameter expression="${host}"
      */
-    private String basedir;
+    private String host = "49.234.15.67:3306";
     /**
-     * @parameter expression="${project.groupId}"
+     * @parameter expression="${schemaName}"
      */
-    private String groupId;
+    private String schemaName = "mall";
     /**
-     * @parameter expression="${project.artifactId}"
+     * @parameter expression="${username}"
      */
-    private String artifactId;
+    private String username="root";
     /**
-     * @parameter expression="${project.build.directory}"
+     * @parameter expression="${password}"
      */
-    private String outobjpath;
-
+    private String password="YANGzhe2430...";
+    /**
+     * @parameter expression="${resourcesTable}"
+     */
+    private String resourcesTable="td_sys_resources";
     /**
      * @parameter expression="${uiPath}"
      */
-    private String uiPath;
+    private String uiPath ="/Users/yangzhe/WebstormProjects/ui/";
 
+    public static void main(String[] args) {
+        try {
+            new GenerateAuth().execute();
+        } catch (MojoExecutionException e) {
+            throw new RuntimeException(e);
+        } catch (MojoFailureException e) {
+            throw new RuntimeException(e);
+        }
+    }
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
-        List<File> list = FileUtil.loopFiles(uiPath + "src/views", pathname -> FileUtil.pathEndsWith(pathname, ".vue"));
+        MysqlDataSource dsc = new MysqlDataSource();
+        dsc.setUrl("jdbc:mysql://"+host+"/"+schemaName+"?serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=UTF-8&useSSL=false&useLocalSessionState=true&rewriteBatchedStatements=true&allowPublicKeyRetrieval=true&tinyInt1isBit=false");
+        dsc.setUser(username);
+        dsc.setPassword(password);
+        String path = uiPath + "src/views";
+        List<File> list = FileUtil.loopFiles(path, pathname -> FileUtil.pathEndsWith(pathname, ".vue"));
         for (File file : list) {
             try {
-                scanVue(file.getPath());
+                VueBean api = scanVue(file.getPath(),file.getPath().replace(".vue","").replace(path,""));
+                api.setPath(file.getPath().replace(".vue","").replace(path,""));
+                api.setCode(api.getPath().replace(".vue","").replace("/",""));
+                api.setComponent("."+api.getPath());
+                api.setName(file.getName().replace(".vue",""));
+                System.err.println(JSONUtil.toJsonStr(api));
+                Entity e = Db.use(dsc).get(resourcesTable, "code", api.getCode());
+                if (null==e){
+                    Db.use(dsc).insert(Entity.parse(api,true,true).setTableName(resourcesTable));
+                }else {
+                    api.setName(null);
+                    Db.use(dsc).update(Entity.parse(api,true,true).setTableName(resourcesTable),Entity.create().set("code",api.getCode()));
+                }
+
             } catch (IOException e) {
                 e.printStackTrace();
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
             }
         }
     }
-    public static VueBean scanVue(String vuePath) throws IOException {
-        String body = FileUtil.readString(new File(vuePath), StandardCharsets.UTF_8);
+    public static VueBean scanVue(String vuePath,String name) throws IOException {
+        File file = new File(vuePath);
+        String body = FileUtil.readString(file, StandardCharsets.UTF_8);
         Document jsoup = Jsoup.parse(body);
         Elements elements = jsoup.getElementsByAttributeStarting("v-auth");
         List<VueAuth> auth = new ArrayList<>();
@@ -76,11 +120,11 @@ public class GenerateAuth extends AbstractMojo {
                     .replace("\"[", "[\"")
                     .replace("]\"", "\"]");
             JSON jsonObj = JSONUtil.parse(json);
-            String title = JSONUtil.getByPath(jsonObj, "title").toString();
+            String title = JSONUtil.getByPath(jsonObj, "name").toString();
             auth.add(new VueAuth()
-                    .setCode(Jsoup.connect("https://www.chtml.cn/w?word=" + title).get().select(".list_box .list_table_info .code_name_line>a").get(0).attr("data-val"))
-                    .setTitle(title)
-                    .setApi(jsonObj.getByPath("api", List.class))
+                    .setCode(MD5.create().digestHex16(name+title))
+                    .setName(title)
+                    .setApis(jsonObj.getByPath("apis", List.class))
             );
         }
         List<String> apis = new ArrayList<>();
@@ -93,8 +137,12 @@ public class GenerateAuth extends AbstractMojo {
                 }
             }
         }
+        for (VueAuth vueAuth : auth) {
+            apis.removeAll(vueAuth.getApis());
+        }
         return new VueBean()
-                .setApi(apis)
-                .setAuth(auth);
+                .setPath(vuePath.replace(".vue",""))
+                .setApis(JSONUtil.toJsonStr(apis))
+                .setPermissions(JSONUtil.toJsonStr(auth));
     }
 }

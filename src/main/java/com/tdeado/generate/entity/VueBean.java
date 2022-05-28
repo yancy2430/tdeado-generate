@@ -8,6 +8,10 @@ import java.util.List;
 @Data
 @Accessors(chain = true)
 public class VueBean {
-    List<String> api;
-    List<VueAuth> auth;
+    String name;
+    String apis;
+    String permissions;
+    String path;
+    String component;
+    String code;
 }

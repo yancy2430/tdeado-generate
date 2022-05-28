@@ -9,6 +9,6 @@ import java.util.List;
 @Accessors(chain = true)
 public class VueAuth {
     String code;
-    String title;
-    List<String> api;
+    String name;
+    List<String> apis;
 }
