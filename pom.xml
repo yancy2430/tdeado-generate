@@ -109,7 +109,7 @@
         <repository>
             <id>releases</id>
             <name>local releases</name>
-            <url>https://nexus.tdeado.com/repository/maven-releases/</url>
+            <url>https://nexus.xiangshangsl.com/repository/maven-releases/</url>
         </repository>
     </distributionManagement>
 </project>
