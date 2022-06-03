@@ -18,10 +18,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.maven.plugin.AbstractMojo;
 import org.jsoup.Jsoup;
 
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.StringWriter;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
@@ -33,6 +30,8 @@ import java.util.stream.Stream;
 
 /**
  * 生成DAO代码
+ * @aggregator true
+ * @inheritByDefault false
  * @goal code
  */
 public class GenerateCode extends AbstractMojo {
@@ -63,11 +62,11 @@ public class GenerateCode extends AbstractMojo {
     /**
      * @parameter expression="${username}"
      */
-    private String username="root";
+    private String username = "root";
     /**
      * @parameter expression="${password}"
      */
-    private String password="YANGzhe2430...";
+    private String password = "YANGzhe2430...";
     /**
      * @parameter expression="${driverName}"
      */
@@ -97,50 +96,65 @@ public class GenerateCode extends AbstractMojo {
      */
     private String responseResultClass;
 
+    /**
+     * @parameter expression="${multiModule}"
+     */
+    private Boolean multiModule;
+
+    /**
+     * @parameter expression="${main.basedir}"
+     */
+    private String parentBasedir;
 
 
     @Override
     public void execute() {
-        StrUtil.blankToDefault(author,"");
-            String tables = scanner("输入表名 多个用,分割 ,所有输入 all");
-            if (tables.equals("all")) {
-                try {
-                    for (String tableName : getTableNames()) {
-                        if (tableName.startsWith(tablePrefix+artifactId)){
-                            init(tableName);
-                        }
+        StrUtil.blankToDefault(author, "");
+        System.err.println(basedir);
+        System.err.println(parentBasedir);
+        String module =null;
+        if (multiModule){
+            module = scanner("请输入模块名");
+        }
+        String tables = scanner("输入表名 多个用,分割 ,所有输入 all");
+        if (tables.equals("all")) {
+            try {
+                for (String tableName : getTableNames()) {
+                    if (tableName.startsWith(tablePrefix + artifactId)) {
+                        init(module,tableName);
                     }
-                } catch (SQLException throwables) {
-                    throwables.printStackTrace();
                 }
-            }else {
-                for (String s : tables.split(",")) {
-                    init(s);
-                }
+            } catch (SQLException throwables) {
+                throwables.printStackTrace();
             }
+        } else {
+            for (String s : tables.split(",")) {
+                init(module,s);
+            }
+        }
     }
 
-    public  Map<String,List<EnumField>> enumInfo(DataSourceConfig config,String table_name) throws SQLException {
+    public Map<String, List<EnumField>> enumInfo(DataSourceConfig config, String table_name) throws SQLException {
         Connection conn = config.getConn();
-        ResultSet res = conn.createStatement().executeQuery("SELECT column_name,data_type,column_type FROM information_schema.columns WHERE table_schema='"+config.getSchemaName()+"' and table_name = '"+table_name+"' and data_type='enum';");
-        Map<String,List<EnumField>> enums= new HashMap<>();
+        ResultSet res = conn.createStatement().executeQuery("SELECT column_name,data_type,column_type FROM information_schema.columns WHERE table_schema='" + config.getSchemaName() + "' and table_name = '" + table_name + "' and data_type='enum';");
+        Map<String, List<EnumField>> enums = new HashMap<>();
         while (res.next()) {
             String string = res.getString("COLUMN_TYPE");
-            string = string.replace("enum(","").replace(")","").replace("'","");
+            string = string.replace("enum(", "").replace(")", "").replace("'", "");
             List<EnumField> value = new ArrayList<>();
             String[] s = string.split(",");
-            for (int i = 1; i <=s.length; i++) {
+            for (int i = 1; i <= s.length; i++) {
                 try {
                     EnumField field = new EnumField();
-                    field.setLabel(s[i-1]);
+                    field.setLabel(s[i - 1]);
                     field.setValue(i);
-                    field.setName(Jsoup.connect("https://www.chtml.cn/w?word="+field.getLabel()).get().select(".list_box .list_table_info .code_name_line>a").get(2).attr("data-val").toUpperCase(Locale.ROOT));
+                    field.setName(Jsoup.connect("https://www.chtml.cn/w?word=" + field.getLabel()).get().select(".list_box .list_table_info .code_name_line>a").get(2).attr("data-val").toUpperCase(Locale.ROOT));
                     value.add(field);
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
             }
-            enums.put(res.getString("COLUMN_NAME"),value );
+            enums.put(res.getString("COLUMN_NAME"), value);
         }
         res.close();
         conn.close();
@@ -181,6 +195,7 @@ public class GenerateCode extends AbstractMojo {
     private static boolean isNeedChange(String content) {
         return content.contains("_");
     }
+
     public static String underLineToCamel(String content, boolean firstUpperCase) {
         if (content == null || content.length() == 0) {
             return "";
@@ -202,8 +217,8 @@ public class GenerateCode extends AbstractMojo {
         }
     }
 
-    public void init(String name) {
-        System.err.println("开始生成 "+name);
+    public void init(String modele,String name) {
+        System.err.println("开始生成 " + name);
         AutoGenerator mpg = new AutoGenerator();
         // 全局配置
         GlobalConfig gc = new GlobalConfig();
@@ -220,7 +235,10 @@ public class GenerateCode extends AbstractMojo {
         // 包配置
         PackageConfig pc = new PackageConfig();
 //        pc.setModuleName(artifactId.replace("-",""));
-        pc.setParent(groupId+"."+artifactId);
+        if (StrUtil.isNotBlank(modele)) {
+            pc.setModuleName(modele);
+        }
+        pc.setParent(groupId + "." + artifactId);
         mpg.setPackageInfo(pc);
 
         // 自定义配置
@@ -229,11 +247,11 @@ public class GenerateCode extends AbstractMojo {
             public void initMap() {
                 // to do nothing
                 Map<String, Object> map = new HashMap<>();
-                map.put("moduleName", artifactId.replace("-",""));
-                map.put("responseResultClass",responseResultClass);
+                map.put("moduleName", artifactId.replace("-", ""));
+                map.put("responseResultClass", responseResultClass);
                 String[] r = responseResultClass.split("\\.");
-                if (r.length>0) {
-                    map.put("responseResult",r[r.length-1]);
+                if (r.length > 0) {
+                    map.put("responseResult", r[r.length - 1]);
                 }
 
                 this.setMap(map);
@@ -250,7 +268,7 @@ public class GenerateCode extends AbstractMojo {
         focList.add(new FileOutConfig("/templates/vue.ftl") {
             @Override
             public String outputFile(TableInfo tableInfo) {
-                return uiPath+"/src/views/"+artifactId.toLowerCase()+"/"+tableInfo.getEntityName().replace(cfg.getMap().get("moduleName").toString(), "")+".vue";
+                return uiPath + "/src/views/" + artifactId.toLowerCase() + "/" + tableInfo.getEntityName().replace(cfg.getMap().get("moduleName").toString(), "") + ".vue";
             }
         });
         cfg.setFileOutConfigList(focList);
@@ -285,21 +303,21 @@ public class GenerateCode extends AbstractMojo {
             Configuration configuration = new Configuration(Configuration.getVersion());
             configuration.setClassForTemplateLoading(InitDoc.class, "/templates/");
             Template template = configuration.getTemplate("enum.ftl");
-            name = underLineToCamel(name.replace(tablePrefix,""),false);
+            name = underLineToCamel(name.replace(tablePrefix, ""), false);
             for (Map.Entry<String, List<EnumField>> stringListEntry : enumInfo.entrySet()) {
                 HashMap<String, Object> model = new HashMap<>();
-                model.put("name", name+StrUtil.upperFirst(stringListEntry.getKey()));
-                model.put("package", groupId+"."+artifactId+".enums");
+                model.put("name", name + StrUtil.upperFirst(stringListEntry.getKey()));
+                model.put("package", groupId + "." + artifactId + ".enums");
                 model.put("enums", stringListEntry.getValue());
                 System.err.println(stringListEntry.getValue());
                 for (EnumField field : stringListEntry.getValue()) {
-                    System.err.println("field:"+field.toString());
+                    System.err.println("field:" + field.toString());
                 }
                 StringWriter result = new StringWriter(1024);
                 template.process(model, result);
                 String content = result.toString();
                 InputStream inputStream = IOUtils.toInputStream(content, StandardCharsets.UTF_8);
-                String path = basedir + "/src/main/java/"+groupId.replace(".","/")+"/"+artifactId+"/enums/"+name+StrUtil.upperFirst(stringListEntry.getKey())+".java";
+                String path = basedir + "/src/main/java/" + groupId.replace(".", "/") + "/" + artifactId + "/enums/" + name + StrUtil.upperFirst(stringListEntry.getKey()) + ".java";
                 //输出文件
                 FileOutputStream fileOutputStream = new FileOutputStream(path);
                 int copy = IOUtils.copy(inputStream, fileOutputStream);
@@ -333,9 +351,9 @@ public class GenerateCode extends AbstractMojo {
      */
     public DataSourceConfig mysqlDataSourceConfig() {
         DataSourceConfig dsc = new DataSourceConfig();
-        dsc.setUrl("jdbc:mysql://"+host+"/"+schemaName+"?serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=UTF-8&useSSL=false&useLocalSessionState=true&rewriteBatchedStatements=true&allowPublicKeyRetrieval=true&tinyInt1isBit=false");
+        dsc.setUrl("jdbc:mysql://" + host + "/" + schemaName + "?serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=UTF-8&useSSL=false&useLocalSessionState=true&rewriteBatchedStatements=true&allowPublicKeyRetrieval=true&tinyInt1isBit=false");
         dsc.setSchemaName(schemaName);
-        dsc.setDriverName(StrUtil.blankToDefault(driverName,"com.mysql.cj.jdbc.Driver"));
+        dsc.setDriverName(StrUtil.blankToDefault(driverName, "com.mysql.cj.jdbc.Driver"));
         dsc.setUsername(username);
         dsc.setPassword(password);
         return dsc;

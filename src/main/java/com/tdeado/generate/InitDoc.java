@@ -8,6 +8,7 @@ import com.power.doc.builder.HtmlApiDocBuilder;
 import com.power.doc.model.ApiAllData;
 import com.power.doc.model.ApiConfig;
 import com.power.doc.model.ApiDoc;
+import com.power.doc.model.SourceCodePath;
 import freemarker.template.Configuration;
 import freemarker.template.Template;
 import freemarker.template.TemplateException;
@@ -35,7 +36,7 @@ public class InitDoc {
             "  \"isStrict\": false,\n" +
             "  \"coverOld\": true,\n" +
             "  \"sortByTitle\": true,\n" +
-            "  \"packageFilters\": \"\",\n" +
+            "  \"packageFilters\": \"com.tdeado.*\",\n" +
             "  \"style\": \"hopscotch\",\n" +
             "  \"inlineEnum\": true,\n" +
             "  \"requestExample\": false,\n" +
@@ -46,26 +47,10 @@ public class InitDoc {
             "  ]\n" +
             "}";
 
-    /**
-     * 生成HTML文档
-     *
-     * @param objPath
-     * @throws IOException
-     */
-    public static void generateApiDoc(String objPath) throws IOException {
-        LocalDateTime vTime = LocalDateTime.now();
-        System.out.println("开始生成api文档");
-        String jsonConfig = readFileContent(objPath + "/src/main/resources/smart-doc.json");
-        ApiConfig config = new Gson().fromJson(jsonConfig, ApiConfig.class);
-        config.setOutPath(objPath + "/src/main/resources/"+ config.getOutPath());
-        HtmlApiDocBuilder.buildApiDoc(config);
-        System.out.println("api文档生成完成 版本" + vTime.format(DateTimeFormatter.ofPattern("yy.Md.HHmm")));
-    }
-
-
-    public static void generateApiJs(String jsPath) throws Exception {
+    public static void generateApiJs(String codePath,String jsPath) throws Exception {
         System.out.println("开始生成api JS文件");
         ApiConfig config = new Gson().fromJson(json, ApiConfig.class);
+        config.setSourceCodePaths(new SourceCodePath().setPath(codePath));
         ApiAllData apiAllData = ApiDataBuilder.getApiData(config);
         Configuration configuration = new Configuration(Configuration.getVersion());
         configuration.setClassForTemplateLoading(InitDoc.class, "/templates/");

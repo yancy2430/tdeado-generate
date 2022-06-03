@@ -8,10 +8,6 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 
-/**
- * 初始化前端
- * @goal init-ui
- */
 public class GenerateInitUI extends AbstractMojo {
     /**
      * @parameter expression="${uiPath}"
