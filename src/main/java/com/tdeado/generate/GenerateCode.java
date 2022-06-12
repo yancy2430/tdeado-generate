@@ -270,7 +270,7 @@ public class GenerateCode extends AbstractMojo {
         focList.add(new FileOutConfig("/templates/vue.ftl") {
             @Override
             public String outputFile(TableInfo tableInfo) {
-                return uiPath + "/src/views/" + artifactId.toLowerCase() + "/" + tableInfo.getEntityName().replace(cfg.getMap().get("moduleName").toString(), "") + ".vue";
+                return uiPath + "/src/views/" + modele+ "/" + tableInfo.getEntityName().replace(cfg.getMap().get("moduleName").toString(), "") + ".vue";
             }
         });
         cfg.setFileOutConfigList(focList);
