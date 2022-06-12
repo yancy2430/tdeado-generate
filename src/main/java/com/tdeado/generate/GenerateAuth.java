@@ -36,32 +36,34 @@ import java.util.stream.Collectors;
 /**
  * 更新扫描权限
  * @goal auth
+ * @aggregator true
+ * @inheritByDefault false
  */
 public class GenerateAuth extends AbstractMojo {
     /**
      * @parameter expression="${host}"
      */
-    private String host = "49.234.15.67:3306";
+    private String host;
     /**
      * @parameter expression="${schemaName}"
      */
-    private String schemaName = "mall";
+    private String schemaName;
     /**
      * @parameter expression="${username}"
      */
-    private String username="root";
+    private String username;
     /**
      * @parameter expression="${password}"
      */
-    private String password="YANGzhe2430...";
+    private String password;
     /**
      * @parameter expression="${resourcesTable}"
      */
-    private String resourcesTable="td_sys_resources";
+    private String resourcesTable;
     /**
      * @parameter expression="${uiPath}"
      */
-    private String uiPath ="/Users/yangzhe/WebstormProjects/ui/";
+    private String uiPath;
 
     public static void main(String[] args) {
         try {
