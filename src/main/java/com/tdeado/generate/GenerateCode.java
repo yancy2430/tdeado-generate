@@ -1,5 +1,6 @@
 package com.tdeado.generate;
 
+import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.ArrayUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.http.HttpUtil;
@@ -54,19 +55,19 @@ public class GenerateCode extends AbstractMojo {
     /**
      * @parameter expression="${host}"
      */
-    private String host = "49.234.15.67:3306";
+    private String host;
     /**
      * @parameter expression="${schemaName}"
      */
-    private String schemaName = "mall";
+    private String schemaName;
     /**
      * @parameter expression="${username}"
      */
-    private String username = "root";
+    private String username;
     /**
      * @parameter expression="${password}"
      */
-    private String password = "YANGzhe2430...";
+    private String password;
     /**
      * @parameter expression="${driverName}"
      */
@@ -110,8 +111,6 @@ public class GenerateCode extends AbstractMojo {
     @Override
     public void execute() {
         StrUtil.blankToDefault(author, "");
-        System.err.println(basedir);
-        System.err.println(parentBasedir);
         String module =null;
         if (multiModule){
             module = scanner("请输入模块名");
@@ -136,10 +135,13 @@ public class GenerateCode extends AbstractMojo {
 
     public Map<String, List<EnumField>> enumInfo(DataSourceConfig config, String table_name) throws SQLException {
         Connection conn = config.getConn();
-        ResultSet res = conn.createStatement().executeQuery("SELECT column_name,data_type,column_type FROM information_schema.columns WHERE table_schema='" + config.getSchemaName() + "' and table_name = '" + table_name + "' and data_type='enum';");
+        String sql= "SELECT column_name,data_type,column_type FROM information_schema.columns WHERE table_schema='" + schemaName + "' and table_name = '" + table_name + "' and data_type='enum';";
+        System.err.println(sql);
+        ResultSet res = conn.createStatement().executeQuery(sql);
         Map<String, List<EnumField>> enums = new HashMap<>();
         while (res.next()) {
             String string = res.getString("COLUMN_TYPE");
+            System.err.println(string);
             string = string.replace("enum(", "").replace(")", "").replace("'", "");
             List<EnumField> value = new ArrayList<>();
             String[] s = string.split(",");
@@ -222,7 +224,7 @@ public class GenerateCode extends AbstractMojo {
         AutoGenerator mpg = new AutoGenerator();
         // 全局配置
         GlobalConfig gc = new GlobalConfig();
-        gc.setOutputDir(basedir + "/src/main/java");
+        gc.setOutputDir(basedir +(StrUtil.isNotBlank(modele)?"/"+modele:"")+ "/src/main/java");
         gc.setAuthor(author);
         gc.setOpen(false);
         gc.setFileOverride(false);
@@ -238,7 +240,7 @@ public class GenerateCode extends AbstractMojo {
         if (StrUtil.isNotBlank(modele)) {
             pc.setModuleName(modele);
         }
-        pc.setParent(groupId + "." + artifactId);
+        pc.setParent(groupId);
         mpg.setPackageInfo(pc);
 
         // 自定义配置
@@ -262,7 +264,7 @@ public class GenerateCode extends AbstractMojo {
             @Override
             public String outputFile(TableInfo tableInfo) {
                 // 自定义输入文件名称
-                return basedir + "/src/main/resources/mapper/" + tableInfo.getEntityName() + "Mapper.xml";
+                return basedir +(StrUtil.isNotBlank(modele)?"/"+modele:"")+ "/src/main/resources/mapper/" + tableInfo.getEntityName() + "Mapper.xml";
             }
         });
         focList.add(new FileOutConfig("/templates/vue.ftl") {
@@ -296,10 +298,9 @@ public class GenerateCode extends AbstractMojo {
         mpg.setStrategy(strategy);
         mpg.setTemplateEngine(new FreemarkerTemplateEngine());
         mpg.execute();
-
-
         try {
-            Map<String, List<EnumField>> enumInfo = enumInfo(new GenerateCode().mysqlDataSourceConfig(), name);
+            Map<String, List<EnumField>> enumInfo = enumInfo(mysqlDataSourceConfig(), name);
+            System.err.println("开始生成 enumInfo {}" + enumInfo.entrySet().size());
             Configuration configuration = new Configuration(Configuration.getVersion());
             configuration.setClassForTemplateLoading(InitDoc.class, "/templates/");
             Template template = configuration.getTemplate("enum.ftl");
@@ -307,17 +308,15 @@ public class GenerateCode extends AbstractMojo {
             for (Map.Entry<String, List<EnumField>> stringListEntry : enumInfo.entrySet()) {
                 HashMap<String, Object> model = new HashMap<>();
                 model.put("name", name + StrUtil.upperFirst(stringListEntry.getKey()));
-                model.put("package", groupId + "." + artifactId + ".enums");
+                model.put("package", pc.getParent() + ".enums");
                 model.put("enums", stringListEntry.getValue());
-                System.err.println(stringListEntry.getValue());
-                for (EnumField field : stringListEntry.getValue()) {
-                    System.err.println("field:" + field.toString());
-                }
                 StringWriter result = new StringWriter(1024);
                 template.process(model, result);
                 String content = result.toString();
                 InputStream inputStream = IOUtils.toInputStream(content, StandardCharsets.UTF_8);
-                String path = basedir + "/src/main/java/" + groupId.replace(".", "/") + "/" + artifactId + "/enums/" + name + StrUtil.upperFirst(stringListEntry.getKey()) + ".java";
+                String d = basedir + (StrUtil.isNotBlank(modele) ? "/" + modele : "") + "/src/main/java/" + pc.getParent().replace(".", "/")+ "/enums/";
+                FileUtil.mkdir(d);
+                String path = d+ name + StrUtil.upperFirst(stringListEntry.getKey()) + ".java";
                 //输出文件
                 FileOutputStream fileOutputStream = new FileOutputStream(path);
                 int copy = IOUtils.copy(inputStream, fileOutputStream);
