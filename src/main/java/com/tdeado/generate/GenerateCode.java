@@ -113,13 +113,13 @@ public class GenerateCode extends AbstractMojo {
         StrUtil.blankToDefault(author, "");
         String module =null;
         if (multiModule){
-            module = scanner("请输入模块名");
+            module = scanner("Please enter a module name");
         }
-        String tables = scanner("输入表名 多个用,分割 ,所有输入 all");
+        String tables = scanner("Enter table name multiple use, split, all module table enter all");
         if (tables.equals("all")) {
             try {
                 for (String tableName : getTableNames()) {
-                    if (tableName.startsWith(tablePrefix + artifactId)) {
+                    if (tableName.startsWith(tablePrefix + module)) {
                         init(module,tableName);
                     }
                 }
@@ -334,7 +334,7 @@ public class GenerateCode extends AbstractMojo {
     public static String scanner(String tip) {
         Scanner scanner = new Scanner(System.in);
         StringBuilder help = new StringBuilder();
-        help.append("请输入" + tip + "：");
+        help.append(tip);
         System.out.println(help.toString());
         if (scanner.hasNext()) {
             String ipt = scanner.next();
