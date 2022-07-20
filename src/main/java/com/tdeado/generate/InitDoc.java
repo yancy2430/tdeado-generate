@@ -70,6 +70,54 @@ public class InitDoc {
         map.put("version", LocalDateTime.now().format(DateTimeFormatter.ofPattern("yy.Md.HHmm")));
     }
 
+    public static void localJs(String codePath,String smbPath) throws IOException, TemplateException {
+        System.out.println("开始生成api JS文件");
+        ApiConfig config = new Gson().fromJson(json, ApiConfig.class);
+        config.setSourceCodePaths(new SourceCodePath().setPath(codePath));
+        ApiAllData apiAllData = ApiDataBuilder.getApiData(config);
+        HtmlApiDocBuilder.buildApiDoc(config);
+        Configuration configuration = new Configuration(Configuration.getVersion());
+        configuration.setClassForTemplateLoading(InitDoc.class, "/templates/");
+//            configuration.setDefaultEncoding("UTF‐8");
+        //加载模板
+        Template template = configuration.getTemplate("api.ftl");
+        //数据模型
+        for (ApiDoc apiDoc : apiAllData.getApiDocList()) {
+            HashMap<String, Object> model = new HashMap<>();
+            model.put("api", apiDoc);
+            model.put("module", apiDoc.getName().replace("Controller", ""));
+            String content = processTemplateIntoString(template, model);
+            SmbFile remoteFile = new SmbFile(smbPath + apiDoc.getName().replace("Controller", "") + ".js");
+            if (!remoteFile.exists()) {
+                remoteFile.createNewFile();
+            }
+            System.out.println("开始生成" + remoteFile.getPath());
+            remoteFile.connect();
+            InputStream in = IOUtils.toInputStream(content, StandardCharsets.UTF_8);
+            OutputStream out = new BufferedOutputStream(new SmbFileOutputStream(remoteFile));
+            try {
+                byte[] buffer = new byte[4096];
+                int len = 0; //读取长度
+                while ((len = in.read(buffer, 0, buffer.length)) != -1) {
+                    out.write(buffer, 0, len);
+                }
+            } finally {
+                try {
+                    out.flush();//刷新缓冲的输出流
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+                try {
+                    in.close();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+
+    }
+
+
 
     public static void createFile(Template template, Map<String, Object> map, String name) throws Exception {
         String content = processTemplateIntoString(template, map);
