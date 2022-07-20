@@ -317,6 +317,9 @@ public class GenerateCode extends AbstractMojo {
                 String d = basedir + (StrUtil.isNotBlank(modele) ? "/" + modele : "") + "/src/main/java/" + pc.getParent().replace(".", "/")+ "/enums/";
                 FileUtil.mkdir(d);
                 String path = d+ name + StrUtil.upperFirst(stringListEntry.getKey()) + ".java";
+                if (FileUtil.exist(path)){
+                    continue;
+                }
                 //输出文件
                 FileOutputStream fileOutputStream = new FileOutputStream(path);
                 int copy = IOUtils.copy(inputStream, fileOutputStream);
