@@ -249,7 +249,7 @@ public class GenerateCode extends AbstractMojo {
             public void initMap() {
                 // to do nothing
                 Map<String, Object> map = new HashMap<>();
-                map.put("moduleName", artifactId.replace("-", ""));
+                map.put("moduleName", StrUtil.isNotBlank(modele)?modele:artifactId.replace("-", ""));
                 map.put("responseResultClass", responseResultClass);
                 String[] r = responseResultClass.split("\\.");
                 if (r.length > 0) {
