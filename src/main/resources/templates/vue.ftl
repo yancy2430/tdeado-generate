@@ -25,12 +25,11 @@
 </template>
 
 <script>
-    import TdTable from "@/components/TdTable/TdTable";
     import {${table.entityName?uncap_first}Page} from "@/api/${table.entityName}";
 
     export default {
         name: "${table.entityName}",
-        components: {TdTable},
+        components: {},
         data() {
             return {
                 ${table.entityName?uncap_first}Page: ${table.entityName?uncap_first}Page
